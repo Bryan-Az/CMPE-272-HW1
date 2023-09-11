@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Install HAProxy
+sudo yum install haproxy -y
+
+# Configure HAProxy
+cat <<EOL | sudo tee /etc/haproxy/haproxy.cfg
+global
+    log /dev/log    local0
+    log /dev/log    local1 notice
+    maxconn 4096
+    user haproxy
+    group haproxy
+
+defaults
+    log global
+    mode    http
+    option  httplog
+    option  dontlognull
+    retries 3
+    timeout http-request 10s
+    timeout queue 1m
+    timeout connect 10s
+    timeout client 1m
+    timeout server 1m
+    timeout http-keep-alive 10s
+    timeout check 10s
+    maxconn 3000
+
+frontend http-in
+    bind *:80
+    default_backend servers
+
+backend servers
+    balance roundrobin
+    server server-a 3.12.106.98:80 check
+    server server-b 3.20.70.204:80 check
+EOL
+
+# Enable HAProxy service
+sudo systemctl enable haproxy
+
+# Start HAProxy service
+sudo systemctl start haproxy
+
+# Check HAProxy status
+sudo systemctl status haproxy
+
+echo "Load balancer setup complete."
